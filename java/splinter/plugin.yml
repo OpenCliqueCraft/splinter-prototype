@@ -1,0 +1,8 @@
+name: Splinter
+main: net.gardna.splinter.BlankPlugin
+version: "0.3"
+api-version: 1.16
+commands:
+  mycommand:
+    usage: /mycommand
+    description: does a thing
