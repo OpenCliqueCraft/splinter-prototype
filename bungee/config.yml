@@ -1,3 +1,4 @@
+prevent_proxy_connections: false
 listeners:
 - query_port: 25565
   motd: bungee proxy
@@ -8,7 +9,7 @@ listeners:
     pvp.md-5.net: pvp
   ping_passthrough: false
   priorities:
-  - north
+  - server1
   bind_local_address: true
   host: 0.0.0.0:25565
   max_players: 1
@@ -29,7 +30,6 @@ log_pings: true
 connection_throttle_limit: 3
 server_connect_timeout: 5000
 timeout: 30000
-stats: 764b0eb3-b5d2-4069-94f2-9c9a3d86a245
 player_limit: -1
 ip_forward: false
 groups:
@@ -38,17 +38,17 @@ groups:
 remote_ping_timeout: 5000
 connection_throttle: 4000
 log_commands: false
-prevent_proxy_connections: false
+stats: 764b0eb3-b5d2-4069-94f2-9c9a3d86a245
 online_mode: true
 forge_support: false
 disabled_commands:
 - disabledcommandhere
 servers:
-  north:
+  server1:
     motd: ''
     address: localhost:3000
     restricted: false
-  south:
+  server2:
     motd: ''
     address: localhost:3001
     restricted: false
