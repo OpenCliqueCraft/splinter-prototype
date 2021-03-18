@@ -7,6 +7,8 @@ bungee/BungeeCord.jar
 bungee/locations.yml
 bungee/modules.yml
 
+java\*\target\
+
 instances/*/cache/
 instances/*/logs/
 instances/*/plugins/bStats/
