@@ -4,7 +4,8 @@
     "description": "",
     "scripts": {
         "killjava": "tools\\killall.bat",
-        "bungee": "node tools/launchBungee.js"
+        "bungee": "node tools/launchBungee.js",
+        "spigot": "node tools/launchSpigot.js"
     },
     "repository": {
         "type": "git",

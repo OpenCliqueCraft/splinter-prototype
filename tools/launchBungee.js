@@ -9,10 +9,8 @@ const log = launchLib.log;
 var bungeePath = path.resolve("bungee/BungeeCord.jar");
 
 if (!fs.existsSync(bungeePath)) {
-    log(`Downloading BungeeCord.jar from ${config.urls.bungee}`);
-    launchLib.downloadFile(config.urls.bungee, bungeePath, () => {
-        setTimeout(start_server, 500);
-    });
+    log("BungeeCord.jar missing, downloading...");
+    launchLib.downloadFile(config.urls.bungee, bungeePath, start_server);
 } else start_server();
 
 function bungeeHighlighter(lines) {

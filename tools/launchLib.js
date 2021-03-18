@@ -51,7 +51,8 @@ module.exports.makeProcess = (cmd, opts, callback) => {
 module.exports.downloadFile = (url, output, callback) => {
     var out = fs.createWriteStream(output);
     getHttpLib(url).get(url, (resp) => {
-        resp.pipe(out);
-        callback();
+        resp.pipe(out).on("finish", () => {
+            callback();
+        });
     });
 };
