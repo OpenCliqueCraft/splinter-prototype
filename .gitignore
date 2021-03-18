@@ -1,5 +1,7 @@
-nats/
-node_modules/
+nats
+node_modules
 *.log.*
-bungee/modules/
+bungee/modules
 bungee/BungeeCord.jar
+bungee/locations.yml
+bungee/modules.yml
