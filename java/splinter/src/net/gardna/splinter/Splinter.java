@@ -31,6 +31,7 @@ public class Splinter extends JavaPlugin implements PluginMessageListener {
     public MoveListener moveListener;
     public MyCommandExecutor myCommandExecutor;
     public PlayerJoinListener playerJoinListener;
+    public BlockChangeListener blockChangeListener;
     public NetHandler netHandler;
     public Zoner zoner;
     public String serverName;
@@ -48,6 +49,7 @@ public class Splinter extends JavaPlugin implements PluginMessageListener {
         myCommandExecutor = new MyCommandExecutor();
         moveListener = new MoveListener();
         playerJoinListener = new PlayerJoinListener();
+        blockChangeListener = new BlockChangeListener();
         netHandler = new NetHandler();
         mainWorld = getServer().getWorld("world");
 
@@ -57,6 +59,7 @@ public class Splinter extends JavaPlugin implements PluginMessageListener {
         getCommand("mycommand").setExecutor(myCommandExecutor);
 
         getServer().getPluginManager().registerEvents(playerJoinListener, this);
+        getServer().getPluginManager().registerEvents(blockChangeListener, this);
         getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
         getServer().getMessenger().registerIncomingPluginChannel(this, "BungeeCord", this);
     }
