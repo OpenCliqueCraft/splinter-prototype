@@ -1,0 +1,4 @@
+nats/
+node_modules/
+*.log.*
+bungee/modules/
