@@ -1,3 +1,0 @@
-<template>
-  <input-field default="com.example.blankplugin">IJ_BASE_PACKAGE</input-field>
-</template>
