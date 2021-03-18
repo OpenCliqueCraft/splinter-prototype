@@ -9,6 +9,7 @@ bungee/modules.yml
 
 instances/*/cache/
 instances/*/logs/
+instances/*/plugins/bStats/
 instances/*/world*
 instances/*/Spigot.jar
 instances/*/banned-ips.json
