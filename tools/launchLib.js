@@ -31,7 +31,7 @@ module.exports.makeProcess = (cmd, opts, callback) => {
     });
 
     proc.stdout.on("data", (data) => {
-        var wrapped = wrapper(data);
+        var wrapped = wrapper(data.replace("\r", ""));
         readline.cursorTo(process.stdout, 0, process.stdout.rows + 1);
         process.stdout.write(wrapped);
     });
