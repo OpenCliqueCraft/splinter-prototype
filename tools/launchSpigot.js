@@ -9,11 +9,15 @@ const copyFile = util.promisify(fs.copyFile);
 const log = launchLib.log;
 
 var serverName = process.argv[2];
+var restartString = process.argv[3];
 if (!serverName) {
     log("Please provide a server name");
     log("Usage: npm run spigot <server-name>");
     process.exit(1);
 }
+
+var restart = false;
+if (restartString == "true") restart = true;
 
 var serverPath = path.resolve("instances", serverName);
 var serverJarPath = path.resolve(serverPath, "Spigot.jar");
@@ -52,6 +56,7 @@ function spigotHighlighter(lines) {
 
 function start_server() {
     log("Starting Spigot server");
+    if (restart) log("Auto restart enabled");
     var cmd = "java -jar Spigot.jar -nogui";
     var options = {
         cwd: serverPath,
@@ -60,5 +65,10 @@ function start_server() {
 
     var proc = launchLib.makeProcess(cmd, options, () => {
         log("Spigot server closed");
+
+        if (restart) {
+            log("Restarting...");
+            start_server();
+        }
     });
 }

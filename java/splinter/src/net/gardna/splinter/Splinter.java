@@ -15,8 +15,16 @@ class MyCommandExecutor implements CommandExecutor {
 }
 
 public class Splinter extends JavaPlugin {
+    public static Splinter Instance;
+    public MoveListener moveListener;
+
     @Override
     public void onEnable() {
+        Instance = this;
+
+        moveListener = new MoveListener();
+        moveListener.runTaskTimer(this, 0, 10);
+
         getCommand("mycommand").setExecutor(new MyCommandExecutor());
     }
 }
