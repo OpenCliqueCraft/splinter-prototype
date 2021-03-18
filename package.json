@@ -1,0 +1,23 @@
+{
+    "name": "splinter",
+    "version": "0.0.3",
+    "description": "",
+    "scripts": {
+        "killjava": "tools\\killall.bat",
+        "bungee": "node tools/launchBungee.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/wg4568/splinter.git"
+    },
+    "author": "",
+    "license": "None",
+    "bugs": {
+        "url": "https://github.com/wg4568/splinter/issues"
+    },
+    "homepage": "https://github.com/wg4568/splinter#readme",
+    "dependencies": {
+        "chalk": "^4.1.0",
+        "readline": "^1.3.0"
+    }
+}
