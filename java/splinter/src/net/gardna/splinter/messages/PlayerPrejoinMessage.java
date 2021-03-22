@@ -7,8 +7,8 @@ import org.bukkit.util.Vector;
 
 import java.util.UUID;
 
-public class PlayerTeleportMessage extends NetMessage {
-    public static final int MESSAGE_SIZE = (UUID_SIZE * 1) + (DOUBLE_SIZE * 3) + (FLOAT_SIZE * 2) + (DOUBLE_SIZE * 3) + (BYTE_SIZE * 2);
+public class PlayerPrejoinMessage extends NetMessage {
+    public static final int MESSAGE_SIZE = UUID_SIZE + (DOUBLE_SIZE * 3) + (FLOAT_SIZE * 2) + (DOUBLE_SIZE * 3) + (BYTE_SIZE * 2);
 
     public UUID uuid;
     public Location location;
@@ -16,7 +16,7 @@ public class PlayerTeleportMessage extends NetMessage {
     public boolean flying;
     public boolean sprinting;
 
-    public PlayerTeleportMessage(UUID uuid, Location location, Vector velocity, boolean flying, boolean sprinting) {
+    public PlayerPrejoinMessage(UUID uuid, Location location, Vector velocity, boolean flying, boolean sprinting) {
         super(MESSAGE_SIZE);
 
         this.uuid = uuid;
@@ -30,8 +30,8 @@ public class PlayerTeleportMessage extends NetMessage {
         data.putDouble(location.getX());
         data.putDouble(location.getY());
         data.putDouble(location.getZ());
-        data.putFloat(location.getPitch());
         data.putFloat(location.getYaw());
+        data.putFloat(location.getPitch());
         data.putDouble(velocity.getX());
         data.putDouble(velocity.getY());
         data.putDouble(velocity.getZ());
@@ -39,14 +39,13 @@ public class PlayerTeleportMessage extends NetMessage {
         data.put(EncodeBoolean(sprinting));
     }
 
-    public PlayerTeleportMessage(byte[] raw) {
-        super(MESSAGE_SIZE);
-        data.put(raw);
+    public PlayerPrejoinMessage(byte[] raw) {
+        super(raw);
 
         this.uuid = new UUID(data.getLong(), data.getLong());
 
         this.location = new Location(
-                Splinter.Instance.mainWorld,
+                Splinter.getInstance().mainWorld,
                 data.getDouble(),
                 data.getDouble(),
                 data.getDouble(),
@@ -64,7 +63,7 @@ public class PlayerTeleportMessage extends NetMessage {
         this.sprinting = DecodeBoolean(data.get());
     }
 
-    public static void ApplyToPlayer(PlayerTeleportMessage msg, Player player) {
+    public static void ApplyToPlayer(PlayerPrejoinMessage msg, Player player) {
         player.teleport(msg.location);
         player.setVelocity(msg.velocity);
         player.setFlying(msg.flying);

@@ -10,13 +10,13 @@ public class Bungee {
         out.writeUTF("Connect");
         out.writeUTF(server);
 
-        player.sendPluginMessage(Splinter.Instance, "BungeeCord", out.toByteArray());
+        player.sendPluginMessage(Splinter.getInstance(), "BungeeCord", out.toByteArray());
     }
 
     public static void RequestServerName(Player player) {
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         out.writeUTF("GetServer");
 
-        player.sendPluginMessage(Splinter.Instance, "BungeeCord", out.toByteArray());
+        player.sendPluginMessage(Splinter.getInstance(), "BungeeCord", out.toByteArray());
     }
 }

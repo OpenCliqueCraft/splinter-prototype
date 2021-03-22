@@ -1,20 +1,19 @@
 package net.gardna.splinter;
 
 import io.nats.client.Connection;
-import io.nats.client.Message;
 import io.nats.client.Nats;
-import net.gardna.splinter.messages.PlayerTeleportMessage;
-import net.gardna.splinter.util.Helpers;
+import net.gardna.splinter.messages.BlockChangeMessage;
+import net.gardna.splinter.messages.NetMessage;
+import net.gardna.splinter.messages.PlayerPrejoinMessage;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeoutException;
 
 public class NetHandler extends BukkitRunnable {
     public Connection connection;
@@ -25,19 +24,15 @@ public class NetHandler extends BukkitRunnable {
             connection = Nats.connect();
             CountDownLatch latch = new CountDownLatch(1);
 
-            connection.createDispatcher((msg) -> {
-                onTeleportMessage(new PlayerTeleportMessage(msg.getData()));
-            }).subscribe("teleport");
+            connection.createDispatcher((msg) ->
+                    onPrejoinMessage(new PlayerPrejoinMessage(msg.getData()))
+            ).subscribe("player.prejoin");
 
-            connection.createDispatcher((msg) -> {
-                onBreakMessage(msg);
-            }).subscribe("block.break");
+            connection.createDispatcher((msg) ->
+                    onBlockChangeMessage(new BlockChangeMessage(msg.getData()))
+            ).subscribe("block.change");
 
-            connection.createDispatcher((msg) -> {
-                onPlaceMessage(msg);
-            }).subscribe("block.place");
-
-            System.out.println("Listening for updates");
+            Splinter.getInstance().getLogger().info("NATS listening for messages");
 
             latch.await();
         } catch (IOException | InterruptedException e) {
@@ -45,50 +40,26 @@ public class NetHandler extends BukkitRunnable {
         }
     }
 
-    private void onTeleportMessage(PlayerTeleportMessage msg) {
-        if (Bukkit.getPlayer(msg.uuid) != null) {
-            Player p = Splinter.Instance.getServer().getPlayer(msg.uuid);
-            PlayerTeleportMessage.ApplyToPlayer(msg, p);
-        } else {
-            Splinter.Instance.playerJoinListener.pendingTeleports.put(msg.uuid, msg);
+    public void publish(String channel, NetMessage msg) {
+        try {
+            connection.publish(channel, msg.getData());
+            connection.flush(Duration.ZERO);
+        } catch (TimeoutException | InterruptedException e) {
+            e.printStackTrace();
         }
     }
 
-    private void onBreakMessage(Message msg) {
-        ByteBuffer data = ByteBuffer.wrap(msg.getData());
-        int x = data.getInt();
-        int y = data.getInt();
-        int z = data.getInt();
-
-        Splinter instance = Splinter.Instance;
-        instance.getServer().getScheduler().runTask(instance, new Runnable() {
-            @Override
-            public void run() {
-                Block b = instance.mainWorld.getBlockAt(x, y, z);
-                b.setBlockData(Material.AIR.createBlockData());
-            }
-        });
+    private void onPrejoinMessage(PlayerPrejoinMessage msg) {
+        Splinter.getInstance().playerJoinListener.movePlayer(msg);
     }
 
-    private void onPlaceMessage(Message msg) {
-        ByteBuffer data = ByteBuffer.wrap(msg.getData());
-        int x = data.getInt();
-        int y = data.getInt();
-        int z = data.getInt();
+    private void onBlockChangeMessage(BlockChangeMessage msg) {
+        World world = Splinter.getInstance().mainWorld;
+        Block block = world.getBlockAt(msg.location.toLocation(world));
 
-        byte[] bdb = Helpers.SliceArray(msg.getData(), 12);
-        String bd = new String(bdb, StandardCharsets.UTF_8);
-
-        System.out.println(bd);
-
-        Splinter instance = Splinter.Instance;
-        instance.getServer().getScheduler().runTask(instance, new Runnable() {
-            @Override
-            public void run() {
-                Block b = instance.mainWorld.getBlockAt(x, y, z);
-                b.setBlockData(instance.getServer().createBlockData(bd));
-            }
-        });
+        Bukkit.getScheduler().runTask(
+                Splinter.getInstance(),
+                () -> block.setBlockData(msg.blockData, true)
+        );
     }
-
 }
