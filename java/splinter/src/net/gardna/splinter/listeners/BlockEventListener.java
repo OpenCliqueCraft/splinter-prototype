@@ -1,5 +1,6 @@
-package net.gardna.splinter;
+package net.gardna.splinter.listeners;
 
+import net.gardna.splinter.Splinter;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
@@ -12,7 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 
-public class BlockChangeListener implements Listener {
+public class BlockEventListener implements Listener {
     @EventHandler
     public void onBlockBreak(BlockBreakEvent event) {
         Block b = event.getBlock();

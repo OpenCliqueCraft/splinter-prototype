@@ -1,7 +1,8 @@
-package net.gardna.splinter;
+package net.gardna.splinter.listeners;
 
-import net.gardna.splinter.util.Bungee;
-import org.bukkit.Location;
+import net.gardna.splinter.Bungee;
+import net.gardna.splinter.Splinter;
+import net.gardna.splinter.messages.PlayerTeleportMessage;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -12,7 +13,7 @@ import java.util.Map;
 import java.util.UUID;
 
 public class PlayerJoinListener implements Listener {
-    public Map<UUID, Location> pendingTeleports = new HashMap<UUID, Location>();
+    public Map<UUID, PlayerTeleportMessage> pendingTeleports = new HashMap<>();
 
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
@@ -33,7 +34,8 @@ public class PlayerJoinListener implements Listener {
 
         if (pendingTeleports.containsKey(player.getUniqueId())) {
             UUID uuid = player.getUniqueId();
-            player.teleport(pendingTeleports.get(uuid));
+            PlayerTeleportMessage msg = pendingTeleports.get(uuid);
+            PlayerTeleportMessage.ApplyToPlayer(msg, player);
             pendingTeleports.remove(uuid);
         }
     }

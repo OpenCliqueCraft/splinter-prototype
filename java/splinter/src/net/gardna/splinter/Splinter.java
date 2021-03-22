@@ -2,36 +2,24 @@ package net.gardna.splinter;
 
 import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteStreams;
-import net.gardna.splinter.util.Bungee;
+import net.gardna.splinter.listeners.BlockEventListener;
+import net.gardna.splinter.listeners.PlayerJoinListener;
+import net.gardna.splinter.listeners.PlayerMoveListener;
 import net.gardna.splinter.util.Vector2;
 import net.gardna.splinter.zoner.MassiveRegion;
 import net.gardna.splinter.zoner.Region;
 import net.gardna.splinter.zoner.Zoner;
 import org.bukkit.World;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
-import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 
-class MyCommandExecutor implements CommandExecutor {
-    @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        sender.sendMessage("You ran /mycommand");
-
-        Bungee.MovePlayer((Player) sender, "server2");
-
-        return true;
-    }
-}
 
 public class Splinter extends JavaPlugin implements PluginMessageListener {
     public static Splinter Instance;
-    public MoveListener moveListener;
-    public MyCommandExecutor myCommandExecutor;
+    public PlayerMoveListener playerMoveListener;
     public PlayerJoinListener playerJoinListener;
-    public BlockChangeListener blockChangeListener;
+    public BlockEventListener blockEventListener;
     public NetHandler netHandler;
     public Zoner zoner;
     public String serverName;
@@ -46,20 +34,20 @@ public class Splinter extends JavaPlugin implements PluginMessageListener {
                 new MassiveRegion("server2")
         });
 
-        myCommandExecutor = new MyCommandExecutor();
-        moveListener = new MoveListener();
+        playerMoveListener = new PlayerMoveListener();
         playerJoinListener = new PlayerJoinListener();
-        blockChangeListener = new BlockChangeListener();
-        netHandler = new NetHandler();
-        mainWorld = getServer().getWorld("world");
+        blockEventListener = new BlockEventListener();
 
-        moveListener.runTaskTimer(this, 0, 10);
+        netHandler = new NetHandler();
+
+        mainWorld = getServer().getWorld("world");
+        mainWorld.setAutoSave(false);
+
+        playerMoveListener.runTaskTimer(this, 0, 10);
         netHandler.runTaskAsynchronously(this);
 
-        getCommand("mycommand").setExecutor(myCommandExecutor);
-
         getServer().getPluginManager().registerEvents(playerJoinListener, this);
-        getServer().getPluginManager().registerEvents(blockChangeListener, this);
+        getServer().getPluginManager().registerEvents(blockEventListener, this);
         getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
         getServer().getMessenger().registerIncomingPluginChannel(this, "BungeeCord", this);
     }

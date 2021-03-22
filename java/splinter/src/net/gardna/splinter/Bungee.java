@@ -1,8 +1,7 @@
-package net.gardna.splinter.util;
+package net.gardna.splinter;
 
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
-import net.gardna.splinter.Splinter;
 import org.bukkit.entity.Player;
 
 public class Bungee {

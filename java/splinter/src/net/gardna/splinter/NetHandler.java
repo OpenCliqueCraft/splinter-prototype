@@ -3,17 +3,17 @@ package net.gardna.splinter;
 import io.nats.client.Connection;
 import io.nats.client.Message;
 import io.nats.client.Nats;
+import net.gardna.splinter.messages.PlayerTeleportMessage;
 import net.gardna.splinter.util.Helpers;
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 
 public class NetHandler extends BukkitRunnable {
@@ -26,7 +26,7 @@ public class NetHandler extends BukkitRunnable {
             CountDownLatch latch = new CountDownLatch(1);
 
             connection.createDispatcher((msg) -> {
-                onTeleportMessage(msg);
+                onTeleportMessage(new PlayerTeleportMessage(msg.getData()));
             }).subscribe("teleport");
 
             connection.createDispatcher((msg) -> {
@@ -45,21 +45,12 @@ public class NetHandler extends BukkitRunnable {
         }
     }
 
-    private void onTeleportMessage(Message msg) {
-        ByteBuffer data = ByteBuffer.wrap(msg.getData());
-        UUID uuid = new UUID(data.getLong(), data.getLong());
-        double x = data.getDouble();
-        double y = data.getDouble();
-        double z = data.getDouble();
-        float pitch = data.getFloat();
-        float yaw = data.getFloat();
-
-        Location loc = new Location(Splinter.Instance.mainWorld, x, y, z, yaw, pitch);
-
-        if (Bukkit.getPlayer(uuid) != null) {
-            Splinter.Instance.getServer().getPlayer(uuid).teleport(loc);
+    private void onTeleportMessage(PlayerTeleportMessage msg) {
+        if (Bukkit.getPlayer(msg.uuid) != null) {
+            Player p = Splinter.Instance.getServer().getPlayer(msg.uuid);
+            PlayerTeleportMessage.ApplyToPlayer(msg, p);
         } else {
-            Splinter.Instance.playerJoinListener.pendingTeleports.put(uuid, loc);
+            Splinter.Instance.playerJoinListener.pendingTeleports.put(msg.uuid, msg);
         }
     }
 

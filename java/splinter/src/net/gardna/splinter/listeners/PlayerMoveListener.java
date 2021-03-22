@@ -1,12 +1,14 @@
-package net.gardna.splinter;
+package net.gardna.splinter.listeners;
 
-import net.gardna.splinter.util.Bungee;
+import net.gardna.splinter.Bungee;
+import net.gardna.splinter.Splinter;
 import net.gardna.splinter.util.Vector2;
 import net.gardna.splinter.zoner.Region;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.util.Vector;
 
 import java.nio.ByteBuffer;
 import java.time.Duration;
@@ -15,10 +17,10 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 
-public class MoveListener extends BukkitRunnable {
+public class PlayerMoveListener extends BukkitRunnable {
     public Map<UUID, Vector2> previous;
 
-    public MoveListener() {
+    public PlayerMoveListener() {
         previous = new HashMap<UUID, Vector2>();
     }
 
@@ -47,9 +49,10 @@ public class MoveListener extends BukkitRunnable {
 
         if (!supposed.server.equals(instance.serverName)) {
             Location loc = player.getLocation();
+            Vector vel = player.getVelocity();
 
             UUID uuid = player.getUniqueId();
-            ByteBuffer bb = ByteBuffer.wrap(new byte[16 + 8 + 8 + 8 + 4 + 4]);
+            ByteBuffer bb = ByteBuffer.wrap(new byte[16 + 8 + 8 + 8 + 4 + 4 + 8 + 8 + 8 + 1 + 1]);
             bb.putLong(uuid.getMostSignificantBits());
             bb.putLong(uuid.getLeastSignificantBits());
             bb.putDouble(loc.getX());
@@ -57,6 +60,11 @@ public class MoveListener extends BukkitRunnable {
             bb.putDouble(loc.getZ());
             bb.putFloat(loc.getPitch());
             bb.putFloat(loc.getYaw());
+            bb.putDouble(vel.getX());
+            bb.putDouble(vel.getY());
+            bb.putDouble(vel.getZ());
+            bb.put((byte) (player.isFlying() ? 1 : 0));
+            bb.put((byte) (player.isSprinting() ? 1 : 0));
 
             Splinter.Instance.netHandler.connection.publish("teleport", bb.array());
 
