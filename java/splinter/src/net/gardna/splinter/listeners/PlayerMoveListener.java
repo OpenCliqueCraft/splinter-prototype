@@ -2,6 +2,7 @@ package net.gardna.splinter.listeners;
 
 import net.gardna.splinter.Bungee;
 import net.gardna.splinter.Splinter;
+import net.gardna.splinter.messages.PlayerDataMessage;
 import net.gardna.splinter.messages.PlayerPrejoinMessage;
 import net.gardna.splinter.util.Vector2;
 import net.gardna.splinter.zoner.Region;
@@ -45,7 +46,7 @@ public class PlayerMoveListener extends BukkitRunnable {
         Region supposed = instance.zoner.getSupposedRegion(player);
 
         if (!supposed.server.equals(instance.serverName)) {
-            PlayerPrejoinMessage msg = new PlayerPrejoinMessage(
+            PlayerPrejoinMessage prejoinMessage = new PlayerPrejoinMessage(
                     player.getUniqueId(),
                     player.getLocation(),
                     player.getVelocity(),
@@ -53,7 +54,14 @@ public class PlayerMoveListener extends BukkitRunnable {
                     player.isSprinting()
             );
 
-            Splinter.getInstance().netHandler.publish("player.prejoin", msg);
+            PlayerDataMessage dataMessage = new PlayerDataMessage(
+                    player.getUniqueId(),
+                    PlayerDataMessage.ReadPlayerdata(player.getUniqueId())
+            );
+
+            Splinter.getInstance().netHandler.publish("player.prejoin", prejoinMessage);
+            Splinter.getInstance().netHandler.publish("player.data", dataMessage);
+
             Bungee.MovePlayer(player, supposed.server);
         }
     }

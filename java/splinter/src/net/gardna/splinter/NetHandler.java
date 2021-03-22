@@ -4,6 +4,7 @@ import io.nats.client.Connection;
 import io.nats.client.Nats;
 import net.gardna.splinter.messages.BlockChangeMessage;
 import net.gardna.splinter.messages.NetMessage;
+import net.gardna.splinter.messages.PlayerDataMessage;
 import net.gardna.splinter.messages.PlayerPrejoinMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
@@ -31,6 +32,10 @@ public class NetHandler extends BukkitRunnable {
             connection.createDispatcher((msg) ->
                     onBlockChangeMessage(new BlockChangeMessage(msg.getData()))
             ).subscribe("block.change");
+
+            connection.createDispatcher((msg) ->
+                    onPlayerDataMessage(new PlayerDataMessage(msg.getData()))
+            ).subscribe("player.data");
 
             Splinter.getInstance().getLogger().info("NATS listening for messages");
 
@@ -61,5 +66,12 @@ public class NetHandler extends BukkitRunnable {
                 Splinter.getInstance(),
                 () -> block.setBlockData(msg.blockData, true)
         );
+    }
+
+    private void onPlayerDataMessage(PlayerDataMessage msg) {
+        System.out.println(msg.uuid);
+        PlayerDataMessage.WritePlayerData(msg.uuid, msg.playerData);
+
+        System.out.println("Saved data");
     }
 }
