@@ -6,6 +6,7 @@ import net.gardna.splinter.messages.BlockChangeMessage;
 import net.gardna.splinter.messages.NetMessage;
 import net.gardna.splinter.messages.PlayerDataMessage;
 import net.gardna.splinter.messages.PlayerPrejoinMessage;
+import net.gardna.splinter.messages.WeatherChangeMessage;
 import net.gardna.splinter.messages.WorldTimeMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
@@ -49,6 +50,11 @@ public class NetHandler extends BukkitRunnable {
                 WorldTimeMessage msg = new WorldTimeMessage(incoming.getData());
                 if (!isOwnMessage(msg)) onWorldTimeMessage(msg);
             }).subscribe("world.time");
+
+            connection.createDispatcher((incoming) -> {
+                WeatherChangeMessage msg = new WeatherChangeMessage(incoming.getData());
+                if (!isOwnMessage(msg)) onWeatherChangeMessage(msg);
+            }).subscribe("world.weather");
 
             Splinter.getInstance().getLogger().info("NATS listening for messages");
 
@@ -96,5 +102,17 @@ public class NetHandler extends BukkitRunnable {
                 Splinter.getInstance(),
                 () -> Splinter.getInstance().mainWorld.setTime(msg.time)
         );
+    }
+
+    private void onWeatherChangeMessage(WeatherChangeMessage msg) {
+        Bukkit.getScheduler().runTask(
+                Splinter.getInstance(),
+                () -> {
+                    Splinter.getInstance().mainWorld.setThundering(msg.thundering);
+                    Splinter.getInstance().mainWorld.setStorm(msg.raining);
+                }
+        );
+        System.out.println("rain:" + msg.raining);
+        System.out.println("thunder:" + msg.thundering);
     }
 }
