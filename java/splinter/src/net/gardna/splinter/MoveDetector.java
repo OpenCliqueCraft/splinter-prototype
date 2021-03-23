@@ -1,7 +1,5 @@
-package net.gardna.splinter.listeners;
+package net.gardna.splinter;
 
-import net.gardna.splinter.Bungee;
-import net.gardna.splinter.Splinter;
 import net.gardna.splinter.messages.PlayerDataMessage;
 import net.gardna.splinter.messages.PlayerPrejoinMessage;
 import net.gardna.splinter.util.Vector2;
@@ -15,10 +13,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public class PlayerMoveListener extends BukkitRunnable {
+public class MoveDetector extends BukkitRunnable {
     public Map<UUID, Vector2> previous;
 
-    public PlayerMoveListener() {
+    public MoveDetector() {
         previous = new HashMap<>();
     }
 

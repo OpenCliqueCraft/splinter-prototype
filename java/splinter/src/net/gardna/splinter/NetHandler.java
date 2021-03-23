@@ -79,7 +79,7 @@ public class NetHandler extends BukkitRunnable {
     }
 
     private void onPrejoinMessage(PlayerPrejoinMessage msg) {
-        Splinter.getInstance().playerJoinListener.movePlayer(msg);
+        Splinter.getInstance().listeners.playerJoinListener.movePlayer(msg);
     }
 
     private void onBlockChangeMessage(BlockChangeMessage msg) {
