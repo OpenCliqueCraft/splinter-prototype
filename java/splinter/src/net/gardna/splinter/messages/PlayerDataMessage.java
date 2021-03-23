@@ -79,6 +79,6 @@ public class PlayerDataMessage extends NetMessage {
         super(raw);
 
         this.uuid = new UUID(data.getLong(), data.getLong());
-        this.playerData = Helpers.SliceArray(raw, MESSAGE_SIZE);
+        this.playerData = Helpers.SliceArray(raw, MESSAGE_SIZE + LONG_SIZE);
     }
 }

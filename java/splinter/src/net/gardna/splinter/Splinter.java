@@ -5,6 +5,7 @@ import com.google.common.io.ByteStreams;
 import net.gardna.splinter.listeners.BlockEventListener;
 import net.gardna.splinter.listeners.PlayerJoinListener;
 import net.gardna.splinter.listeners.PlayerMoveListener;
+import net.gardna.splinter.listeners.TimeSkipListener;
 import net.gardna.splinter.util.Vector2;
 import net.gardna.splinter.zoner.MassiveRegion;
 import net.gardna.splinter.zoner.Region;
@@ -20,6 +21,7 @@ public class Splinter extends JavaPlugin implements PluginMessageListener {
     public PlayerMoveListener playerMoveListener;
     public PlayerJoinListener playerJoinListener;
     public BlockEventListener blockEventListener;
+    public TimeSkipListener timeSkipListener;
     public NetHandler netHandler;
     public Zoner zoner;
     public String serverName;
@@ -37,6 +39,7 @@ public class Splinter extends JavaPlugin implements PluginMessageListener {
         playerMoveListener = new PlayerMoveListener();
         playerJoinListener = new PlayerJoinListener();
         blockEventListener = new BlockEventListener();
+        timeSkipListener = new TimeSkipListener();
 
         netHandler = new NetHandler();
 
@@ -48,6 +51,7 @@ public class Splinter extends JavaPlugin implements PluginMessageListener {
 
         getServer().getPluginManager().registerEvents(playerJoinListener, this);
         getServer().getPluginManager().registerEvents(blockEventListener, this);
+        getServer().getPluginManager().registerEvents(timeSkipListener, this);
         getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
         getServer().getMessenger().registerIncomingPluginChannel(this, "BungeeCord", this);
     }

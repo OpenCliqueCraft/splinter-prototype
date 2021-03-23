@@ -35,7 +35,7 @@ public class BlockChangeMessage extends NetMessage {
                 data.getInt()
         );
 
-        byte[] bdb = Helpers.SliceArray(raw, MESSAGE_SIZE);
+        byte[] bdb = Helpers.SliceArray(raw, MESSAGE_SIZE + LONG_SIZE);
         String bd = new String(bdb, StandardCharsets.UTF_8);
 
         this.blockData = Bukkit.createBlockData(bd);
