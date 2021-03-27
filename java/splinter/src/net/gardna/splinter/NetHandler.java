@@ -2,15 +2,17 @@ package net.gardna.splinter;
 
 import io.nats.client.Connection;
 import io.nats.client.Nats;
-import net.gardna.splinter.messages.BlockChangeMessage;
 import net.gardna.splinter.messages.NetMessage;
 import net.gardna.splinter.messages.PlayerDataMessage;
 import net.gardna.splinter.messages.PlayerPrejoinMessage;
 import net.gardna.splinter.messages.WeatherChangeMessage;
 import net.gardna.splinter.messages.WorldTimeMessage;
+import net.gardna.splinter.messages.block.BlockChangeMessage;
+import net.gardna.splinter.messages.block.SignChangeMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.Sign;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.io.IOException;
@@ -42,6 +44,11 @@ public class NetHandler extends BukkitRunnable {
             }).subscribe("block.change");
 
             connection.createDispatcher((incoming) -> {
+                SignChangeMessage msg = new SignChangeMessage(incoming.getData());
+                if (!isOwnMessage(msg)) onSignChangeMessage(msg);
+            }).subscribe("block.sign");
+
+            connection.createDispatcher((incoming) -> {
                 PlayerDataMessage msg = new PlayerDataMessage(incoming.getData());
                 if (!isOwnMessage(msg)) onPlayerDataMessage(msg);
             }).subscribe("player.data");
@@ -65,7 +72,6 @@ public class NetHandler extends BukkitRunnable {
     }
 
     public boolean isOwnMessage(NetMessage msg) {
-        System.out.println("MSG ID " + msg.senderId);
         return msg.senderId == serverId;
     }
 
@@ -114,5 +120,21 @@ public class NetHandler extends BukkitRunnable {
         );
         System.out.println("rain:" + msg.raining);
         System.out.println("thunder:" + msg.thundering);
+    }
+
+    private void onSignChangeMessage(SignChangeMessage msg) {
+        Bukkit.getScheduler().runTask(
+                Splinter.getInstance(),
+                () -> {
+                    World mainWorld = Splinter.getInstance().mainWorld;
+                    Block block = mainWorld.getBlockAt(msg.location.toLocation(mainWorld));
+                    Sign sign = (Sign) block.getState();
+
+                    for (int i = 0; i < msg.lines.length; i++)
+                        sign.setLine(i, msg.lines[i]);
+
+                    sign.update();
+                }
+        );
     }
 }

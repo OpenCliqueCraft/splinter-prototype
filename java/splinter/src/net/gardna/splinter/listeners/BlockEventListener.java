@@ -1,9 +1,11 @@
 package net.gardna.splinter.listeners;
 
 import net.gardna.splinter.Splinter;
-import net.gardna.splinter.messages.BlockChangeMessage;
+import net.gardna.splinter.messages.block.BlockChangeMessage;
+import net.gardna.splinter.messages.block.SignChangeMessage;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -14,7 +16,8 @@ import org.bukkit.event.block.BlockFertilizeEvent;
 import org.bukkit.event.block.BlockFromToEvent;
 import org.bukkit.event.block.BlockGrowEvent;
 import org.bukkit.event.block.BlockIgniteEvent;
-import org.bukkit.event.block.BlockPistonEvent;
+import org.bukkit.event.block.BlockPistonExtendEvent;
+import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.BlockRedstoneEvent;
 import org.bukkit.event.block.CauldronLevelChangeEvent;
@@ -22,22 +25,33 @@ import org.bukkit.event.block.LeavesDecayEvent;
 import org.bukkit.event.block.MoistureChangeEvent;
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.block.SpongeAbsorbEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.util.Vector;
+
+import java.util.List;
 
 public class BlockEventListener implements Listener {
+    public static final BlockData AIR = Material.AIR.createBlockData();
+
+    public void publishBlockChange(Block block, BlockData blockData) {
+        BlockChangeMessage msg = new BlockChangeMessage(
+                block.getLocation().toVector(),
+                blockData
+        );
+
+        Splinter.getInstance().netHandler.publish("block.change", msg);
+    }
+
     @EventHandler
     public void onBlockBurn(BlockBurnEvent event) {
+        Block block = event.getBlock();
+        publishBlockChange(block, AIR);
     }
 
     @EventHandler
     public void onBlockBreak(BlockBreakEvent event) {
         Block block = event.getBlock();
-
-        BlockChangeMessage msg = new BlockChangeMessage(
-                block.getLocation().toVector(),
-                Material.AIR.createBlockData()
-        );
-
-        Splinter.getInstance().netHandler.publish("block.change", msg);
+        publishBlockChange(block, AIR);
     }
 
     @EventHandler
@@ -45,7 +59,23 @@ public class BlockEventListener implements Listener {
     }
 
     @EventHandler
-    public void onBlockExplode(BlockExplodeEvent event) {
+    public void onBlockExplode(BlockExplodeEvent event, List<Block> blocks, float yield) {
+        publishBlockChange(event.getBlock(), AIR);
+
+        System.out.println(blocks);
+
+        for (int i = 0; i < blocks.size(); i++) {
+            publishBlockChange(blocks.get(i), AIR);
+        }
+    }
+
+    @EventHandler
+    public void onEntityExplode(EntityExplodeEvent event) {
+        System.out.println("EXPLODE: " + event.getEntity().getName());
+
+        for (int i = 0; i < event.blockList().size(); i++) {
+            publishBlockChange(event.blockList().get(i), AIR);
+        }
     }
 
     @EventHandler
@@ -65,19 +95,17 @@ public class BlockEventListener implements Listener {
     }
 
     @EventHandler
-    public void onBlockPiston(BlockPistonEvent event) {
+    public void onPistonExtend(BlockPistonExtendEvent event) {
+    }
+
+    @EventHandler
+    public void onPistonRetract(BlockPistonRetractEvent event) {
     }
 
     @EventHandler
     public void onBlockPlace(BlockPlaceEvent event) {
         Block block = event.getBlock();
-
-        BlockChangeMessage msg = new BlockChangeMessage(
-                block.getLocation().toVector(),
-                block.getBlockData()
-        );
-
-        Splinter.getInstance().netHandler.publish("block.change", msg);
+        publishBlockChange(block, block.getBlockData());
     }
 
     @EventHandler
@@ -98,6 +126,14 @@ public class BlockEventListener implements Listener {
 
     @EventHandler
     public void onSignChange(SignChangeEvent event) {
+        Vector loc = event.getBlock().getLocation().toVector();
+        SignChangeMessage msg = new SignChangeMessage(loc, event.getLines());
+
+        System.out.println("SIGN CHANGED!");
+        for (String line : event.getLines())
+            System.out.println("line:" + line);
+
+        Splinter.getInstance().netHandler.publish("block.sign", msg);
     }
 
     @EventHandler

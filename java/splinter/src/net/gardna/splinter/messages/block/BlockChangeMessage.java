@@ -1,5 +1,6 @@
-package net.gardna.splinter.messages;
+package net.gardna.splinter.messages.block;
 
+import net.gardna.splinter.messages.NetMessage;
 import net.gardna.splinter.util.Helpers;
 import org.bukkit.Bukkit;
 import org.bukkit.block.data.BlockData;
