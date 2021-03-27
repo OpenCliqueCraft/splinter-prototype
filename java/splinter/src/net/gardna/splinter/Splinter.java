@@ -12,7 +12,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 
-
 public class Splinter extends JavaPlugin implements PluginMessageListener {
     private static Splinter instance;
 
@@ -31,7 +30,7 @@ public class Splinter extends JavaPlugin implements PluginMessageListener {
                 new Region("server1", new Vector2(-100, -100), new Vector2(100, 100)),
                 new MassiveRegion("server2")
         });
-
+        
         moveDetector = new MoveDetector();
         moveDetector.runTaskTimer(this, 0, 10);
 
@@ -43,7 +42,7 @@ public class Splinter extends JavaPlugin implements PluginMessageListener {
 
         listeners = new ListenerManager();
         listeners.registerAll(this);
-        
+
         getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
         getServer().getMessenger().registerIncomingPluginChannel(this, "BungeeCord", this);
     }
