@@ -28,6 +28,7 @@ import org.bukkit.event.block.MoistureChangeEvent;
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.block.SpongeAbsorbEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.world.StructureGrowEvent;
 import org.bukkit.util.Vector;
@@ -59,6 +60,14 @@ public class BlockEventListener implements Listener {
         );
 
         Splinter.getInstance().netHandler.publish("block.change", msg);
+    }
+
+    @EventHandler
+    public void onItemSpawn(ItemSpawnEvent event) {
+        if (!ShouldDoEvent(event.getLocation())) {
+            event.setCancelled(true);
+            return;
+        }
     }
 
     @EventHandler
@@ -123,8 +132,6 @@ public class BlockEventListener implements Listener {
     public void onBlockExplode(BlockExplodeEvent event, List<Block> blocks, float yield) {
         publishBlockChange(event.getBlock(), AIR);
 
-        System.out.println(blocks);
-
         for (int i = 0; i < blocks.size(); i++) {
             publishBlockChange(blocks.get(i), AIR);
         }
@@ -132,8 +139,6 @@ public class BlockEventListener implements Listener {
 
     @EventHandler
     public void onEntityExplode(EntityExplodeEvent event) {
-        System.out.println("EXPLODE: " + event.getEntity().getName());
-
         for (int i = 0; i < event.blockList().size(); i++) {
             publishBlockChange(event.blockList().get(i), AIR);
         }
@@ -182,10 +187,6 @@ public class BlockEventListener implements Listener {
         Block block = event.getBlock();
         publishBlockChange(block, block.getBlockData());
     }
-
-//    @EventHandler
-//    public void onBlockRedstone(BlockRedstoneEvent event) {
-//    }
 
     @EventHandler
     public void onCauldronChange(CauldronLevelChangeEvent event) {

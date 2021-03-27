@@ -9,10 +9,15 @@ import net.gardna.splinter.messages.WeatherChangeMessage;
 import net.gardna.splinter.messages.WorldTimeMessage;
 import net.gardna.splinter.messages.block.BlockChangeMessage;
 import net.gardna.splinter.messages.block.SignChangeMessage;
+import net.gardna.splinter.util.Helpers;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
+import org.bukkit.block.data.Bisected;
+import org.bukkit.block.data.BlockData;
+import org.bukkit.block.data.type.Bed;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.io.IOException;
@@ -88,13 +93,41 @@ public class NetHandler extends BukkitRunnable {
         Splinter.getInstance().listeners.playerJoinListener.movePlayer(msg);
     }
 
+    private void placeDoor(Block block, BlockData blockData) {
+        Bisected belowData = (Bisected) blockData;
+        Bisected aboveData = (Bisected) belowData.clone();
+        belowData.setHalf(Bisected.Half.BOTTOM);
+        aboveData.setHalf(Bisected.Half.TOP);
+
+        block.setBlockData(belowData, false);
+        block.getRelative(BlockFace.UP).setBlockData(aboveData, false);
+    }
+
+    private void placeBed(Block block, BlockData blockData) {
+        Bed footData = (Bed) blockData;
+        Bed headData = (Bed) footData.clone();
+        footData.setPart(Bed.Part.FOOT);
+        headData.setPart(Bed.Part.HEAD);
+
+        block.setBlockData(footData, false);
+        block.getRelative(footData.getFacing()).setBlockData(headData);
+    }
+
     private void onBlockChangeMessage(BlockChangeMessage msg) {
         World world = Splinter.getInstance().mainWorld;
         Block block = world.getBlockAt(msg.location.toLocation(world));
 
         Bukkit.getScheduler().runTask(
                 Splinter.getInstance(),
-                () -> block.setBlockData(msg.blockData, true)
+                () -> {
+                    if (Helpers.IsDoor(msg.blockData.getMaterial())) {
+                        placeDoor(block, msg.blockData);
+                    } else if (Helpers.IsBed(msg.blockData.getMaterial())) {
+                        placeBed(block, msg.blockData);
+                    } else {
+                        block.setBlockData(msg.blockData, true);
+                    }
+                }
         );
     }
 
