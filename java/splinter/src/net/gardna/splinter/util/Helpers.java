@@ -1,6 +1,11 @@
 package net.gardna.splinter.util;
 
 import org.bukkit.Material;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
+import org.bukkit.block.data.Bisected;
+import org.bukkit.block.data.BlockData;
+import org.bukkit.block.data.type.Bed;
 
 public class Helpers {
     public static final Material[] DOORS = new Material[]{
@@ -58,5 +63,25 @@ public class Helpers {
         for (int i = 0; i < DOORS.length; i++)
             if (DOORS[i].equals(material)) return true;
         return false;
+    }
+
+    public static void PlaceDoor(Block block, BlockData blockData) {
+        Bisected belowData = (Bisected) blockData;
+        Bisected aboveData = (Bisected) belowData.clone();
+        belowData.setHalf(Bisected.Half.BOTTOM);
+        aboveData.setHalf(Bisected.Half.TOP);
+
+        block.setBlockData(belowData, false);
+        block.getRelative(BlockFace.UP).setBlockData(aboveData, false);
+    }
+
+    public static void PlaceBed(Block block, BlockData blockData) {
+        Bed footData = (Bed) blockData;
+        Bed headData = (Bed) footData.clone();
+        footData.setPart(Bed.Part.FOOT);
+        headData.setPart(Bed.Part.HEAD);
+
+        block.setBlockData(footData, false);
+        block.getRelative(footData.getFacing()).setBlockData(headData);
     }
 }

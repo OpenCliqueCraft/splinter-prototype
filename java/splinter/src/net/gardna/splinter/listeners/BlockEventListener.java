@@ -97,7 +97,7 @@ public class BlockEventListener implements Listener {
         }
 
         Block block = event.getBlock();
-        publishBlockChange(block, FIRE);
+        publishBlockChange(block, AIR);
     }
 
     @EventHandler
@@ -158,6 +158,7 @@ public class BlockEventListener implements Listener {
 
     @EventHandler
     public void onBlockFromTo(BlockFromToEvent event) {
+        // TODO: Implement
     }
 
     @EventHandler

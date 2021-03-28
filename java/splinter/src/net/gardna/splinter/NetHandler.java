@@ -1,6 +1,7 @@
 package net.gardna.splinter;
 
 import io.nats.client.Connection;
+import io.nats.client.Dispatcher;
 import io.nats.client.Nats;
 import net.gardna.splinter.messages.NetMessage;
 import net.gardna.splinter.messages.PlayerDataMessage;
@@ -13,11 +14,7 @@ import net.gardna.splinter.util.Helpers;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
-import org.bukkit.block.data.Bisected;
-import org.bukkit.block.data.BlockData;
-import org.bukkit.block.data.type.Bed;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.io.IOException;
@@ -25,6 +22,33 @@ import java.time.Duration;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeoutException;
+
+interface MessageAction {
+    public void recieve(byte[] msg);
+}
+
+class MessageHandler {
+    private NetHandler netHandler;
+    private String channel;
+    private MessageAction action;
+    private Dispatcher dispatcher;
+
+    public MessageHandler(NetHandler netHandler, String channel, MessageAction action) {
+        this.netHandler = netHandler;
+        this.channel = channel;
+        this.action = action;
+
+        this.dispatcher = netHandler.connection.createDispatcher((incoming) -> {
+            NetMessage msg = new NetMessage(incoming.getData());
+            if (msg.senderId != netHandler.serverId) {
+                Bukkit.getScheduler().runTask(
+                        Splinter.getInstance(),
+                        () -> action.recieve(incoming.getData())
+                );
+            }
+        }).subscribe(channel);
+    }
+}
 
 public class NetHandler extends BukkitRunnable {
     public Connection connection;
@@ -38,35 +62,54 @@ public class NetHandler extends BukkitRunnable {
             connection = Nats.connect();
             CountDownLatch latch = new CountDownLatch(1);
 
-            connection.createDispatcher((incoming) -> {
-                PlayerPrejoinMessage msg = new PlayerPrejoinMessage(incoming.getData());
-                if (!isOwnMessage(msg)) onPrejoinMessage(msg);
-            }).subscribe("player.prejoin");
+            MessageHandler playerPrejoin = new MessageHandler(this, "player.prejoin", (byte[] data) -> {
+                PlayerPrejoinMessage msg = new PlayerPrejoinMessage(data);
+                Splinter.getInstance().listeners.playerJoinListener.movePlayer(msg);
+            });
 
-            connection.createDispatcher((incoming) -> {
-                BlockChangeMessage msg = new BlockChangeMessage(incoming.getData());
-                if (!isOwnMessage(msg)) onBlockChangeMessage(msg);
-            }).subscribe("block.change");
+            MessageHandler playerData = new MessageHandler(this, "player.data", (byte[] data) -> {
+                PlayerDataMessage msg = new PlayerDataMessage(data);
+                PlayerDataMessage.WritePlayerData(msg.uuid, msg.playerData);
+            });
 
-            connection.createDispatcher((incoming) -> {
-                SignChangeMessage msg = new SignChangeMessage(incoming.getData());
-                if (!isOwnMessage(msg)) onSignChangeMessage(msg);
-            }).subscribe("block.sign");
+            MessageHandler worldTime = new MessageHandler(this, "world.time", (byte[] data) -> {
+                WorldTimeMessage msg = new WorldTimeMessage(data);
+                Splinter.getInstance().mainWorld.setTime(msg.time);
+            });
 
-            connection.createDispatcher((incoming) -> {
-                PlayerDataMessage msg = new PlayerDataMessage(incoming.getData());
-                if (!isOwnMessage(msg)) onPlayerDataMessage(msg);
-            }).subscribe("player.data");
+            MessageHandler worldWeather = new MessageHandler(this, "world.weather", (byte[] data) -> {
+                WeatherChangeMessage msg = new WeatherChangeMessage(data);
+                Splinter.getInstance().mainWorld.setThundering(msg.thundering);
+                Splinter.getInstance().mainWorld.setStorm(msg.raining);
+            });
 
-            connection.createDispatcher((incoming) -> {
-                WorldTimeMessage msg = new WorldTimeMessage(incoming.getData());
-                if (!isOwnMessage(msg)) onWorldTimeMessage(msg);
-            }).subscribe("world.time");
+            MessageHandler blockChange = new MessageHandler(this, "block.change", (byte[] data) -> {
+                BlockChangeMessage msg = new BlockChangeMessage(data);
 
-            connection.createDispatcher((incoming) -> {
-                WeatherChangeMessage msg = new WeatherChangeMessage(incoming.getData());
-                if (!isOwnMessage(msg)) onWeatherChangeMessage(msg);
-            }).subscribe("world.weather");
+                World world = Splinter.getInstance().mainWorld;
+                Block block = world.getBlockAt(msg.location.toLocation(world));
+
+                if (Helpers.IsDoor(msg.blockData.getMaterial())) {
+                    Helpers.PlaceDoor(block, msg.blockData);
+                } else if (Helpers.IsBed(msg.blockData.getMaterial())) {
+                    Helpers.PlaceBed(block, msg.blockData);
+                } else {
+                    block.setBlockData(msg.blockData, true);
+                }
+            });
+
+            MessageHandler blockSign = new MessageHandler(this, "block.sign", (byte[] data) -> {
+                SignChangeMessage msg = new SignChangeMessage(data);
+
+                World mainWorld = Splinter.getInstance().mainWorld;
+                Block block = mainWorld.getBlockAt(msg.location.toLocation(mainWorld));
+                Sign sign = (Sign) block.getState();
+
+                for (int i = 0; i < msg.lines.length; i++)
+                    sign.setLine(i, msg.lines[i]);
+
+                sign.update();
+            });
 
             Splinter.getInstance().getLogger().info("NATS listening for messages");
 
@@ -76,10 +119,6 @@ public class NetHandler extends BukkitRunnable {
         }
     }
 
-    public boolean isOwnMessage(NetMessage msg) {
-        return msg.senderId == serverId;
-    }
-
     public void publish(String channel, NetMessage msg) {
         try {
             connection.publish(channel, msg.getData());
@@ -87,87 +126,5 @@ public class NetHandler extends BukkitRunnable {
         } catch (TimeoutException | InterruptedException e) {
             e.printStackTrace();
         }
-    }
-
-    private void onPrejoinMessage(PlayerPrejoinMessage msg) {
-        Splinter.getInstance().listeners.playerJoinListener.movePlayer(msg);
-    }
-
-    private void placeDoor(Block block, BlockData blockData) {
-        Bisected belowData = (Bisected) blockData;
-        Bisected aboveData = (Bisected) belowData.clone();
-        belowData.setHalf(Bisected.Half.BOTTOM);
-        aboveData.setHalf(Bisected.Half.TOP);
-
-        block.setBlockData(belowData, false);
-        block.getRelative(BlockFace.UP).setBlockData(aboveData, false);
-    }
-
-    private void placeBed(Block block, BlockData blockData) {
-        Bed footData = (Bed) blockData;
-        Bed headData = (Bed) footData.clone();
-        footData.setPart(Bed.Part.FOOT);
-        headData.setPart(Bed.Part.HEAD);
-
-        block.setBlockData(footData, false);
-        block.getRelative(footData.getFacing()).setBlockData(headData);
-    }
-
-    private void onBlockChangeMessage(BlockChangeMessage msg) {
-        World world = Splinter.getInstance().mainWorld;
-        Block block = world.getBlockAt(msg.location.toLocation(world));
-
-        Bukkit.getScheduler().runTask(
-                Splinter.getInstance(),
-                () -> {
-                    if (Helpers.IsDoor(msg.blockData.getMaterial())) {
-                        placeDoor(block, msg.blockData);
-                    } else if (Helpers.IsBed(msg.blockData.getMaterial())) {
-                        placeBed(block, msg.blockData);
-                    } else {
-                        block.setBlockData(msg.blockData, true);
-                    }
-                }
-        );
-    }
-
-    private void onPlayerDataMessage(PlayerDataMessage msg) {
-        PlayerDataMessage.WritePlayerData(msg.uuid, msg.playerData);
-    }
-
-    private void onWorldTimeMessage(WorldTimeMessage msg) {
-        System.out.println("Recieved time " + msg.time);
-        Bukkit.getScheduler().runTask(
-                Splinter.getInstance(),
-                () -> Splinter.getInstance().mainWorld.setTime(msg.time)
-        );
-    }
-
-    private void onWeatherChangeMessage(WeatherChangeMessage msg) {
-        Bukkit.getScheduler().runTask(
-                Splinter.getInstance(),
-                () -> {
-                    Splinter.getInstance().mainWorld.setThundering(msg.thundering);
-                    Splinter.getInstance().mainWorld.setStorm(msg.raining);
-                }
-        );
-        System.out.println("rain:" + msg.raining);
-        System.out.println("thunder:" + msg.thundering);
-    }
-
-    private void onSignChangeMessage(SignChangeMessage msg) {
-        Bukkit.getScheduler().runTask(
-                Splinter.getInstance(),
-                () -> {
-                    World mainWorld = Splinter.getInstance().mainWorld;
-                    Block block = mainWorld.getBlockAt(msg.location.toLocation(mainWorld));
-                    Sign sign = (Sign) block.getState();
-
-                    for (int i = 0; i < msg.lines.length; i++)
-                        sign.setLine(i, msg.lines[i]);
-
-                    sign.update();
-                }
-        );
     }
 }
