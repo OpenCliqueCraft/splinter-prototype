@@ -1,7 +1,9 @@
-package net.gardna.splinter.messages;
+package net.gardna.splinter.handlers;
 
 import net.gardna.splinter.Splinter;
-import net.gardna.splinter.util.Helpers;
+import net.gardna.splinter.messaging.ByteMessage;
+import net.gardna.splinter.messaging.SplinterHandler;
+import net.gardna.splinter.messaging.SplinterMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
@@ -13,12 +15,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.UUID;
 
-public class PlayerDataMessage extends NetMessage {
-    public static final int MESSAGE_SIZE = UUID_SIZE;
-
-    public UUID uuid;
-    public byte[] playerData;
-
+public class PlayerDataHandler extends SplinterHandler {
     private static File PlayerDataFile(UUID uuid) {
         String s = File.separator;
 
@@ -61,24 +58,28 @@ public class PlayerDataMessage extends NetMessage {
         }
 
         Player player = Bukkit.getPlayer(uuid);
-        player.loadData();
+        if (player != null) player.loadData();
     }
 
-    public PlayerDataMessage(UUID uuid, byte[] playerData) {
-        super(UUID_SIZE + playerData.length);
-
-        this.uuid = uuid;
-        this.playerData = playerData;
-
-        data.putLong(uuid.getMostSignificantBits());
-        data.putLong(uuid.getLeastSignificantBits());
-        data.put(playerData);
+    public PlayerDataHandler(String channel) {
+        super(channel);
     }
 
-    public PlayerDataMessage(byte[] raw) {
-        super(raw);
+    public void send(UUID uuid) {
+        byte[] playerData = ReadPlayerdata(uuid);
+        int length = ByteMessage.UUID_SIZE +
+                ByteMessage.RAW_SIZE(playerData);
 
-        this.uuid = new UUID(data.getLong(), data.getLong());
-        this.playerData = Helpers.SliceArray(raw, MESSAGE_SIZE + LONG_SIZE);
+        SplinterMessage msg = new SplinterMessage(getServerId(), length);
+        msg.putUuid(uuid);
+        msg.putRaw(playerData);
+
+        publish(msg);
+    }
+
+    @Override
+    public void recieve(SplinterMessage msg) {
+        UUID uuid = msg.getUuid();
+        WritePlayerData(uuid, msg.getRaw());
     }
 }

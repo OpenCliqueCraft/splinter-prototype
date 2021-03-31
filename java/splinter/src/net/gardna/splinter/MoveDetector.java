@@ -1,7 +1,5 @@
 package net.gardna.splinter;
 
-import net.gardna.splinter.messages.PlayerDataMessage;
-import net.gardna.splinter.messages.PlayerPrejoinMessage;
 import net.gardna.splinter.util.Vector2;
 import net.gardna.splinter.zoner.Region;
 import org.bukkit.Bukkit;
@@ -44,21 +42,8 @@ public class MoveDetector extends BukkitRunnable {
         Region supposed = instance.zoner.getSupposedRegion(player);
 
         if (!supposed.server.equals(instance.serverName)) {
-            PlayerPrejoinMessage prejoinMessage = new PlayerPrejoinMessage(
-                    player.getUniqueId(),
-                    player.getLocation(),
-                    player.getVelocity(),
-                    player.isFlying(),
-                    player.isSprinting()
-            );
-
-            PlayerDataMessage dataMessage = new PlayerDataMessage(
-                    player.getUniqueId(),
-                    PlayerDataMessage.ReadPlayerdata(player.getUniqueId())
-            );
-
-            Splinter.getInstance().netHandler.publish("player.prejoin", prejoinMessage);
-            Splinter.getInstance().netHandler.publish("player.data", dataMessage);
+            Splinter.getInstance().playerJoinHandler.send(player);
+            Splinter.getInstance().playerDataHandler.send(player.getUniqueId());
 
             Bungee.MovePlayer(player, supposed.server);
         }

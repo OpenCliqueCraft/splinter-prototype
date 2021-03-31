@@ -1,16 +1,20 @@
-package net.gardna.splinter.listeners;
+package net.gardna.splinter.handlers;
 
 import net.gardna.splinter.Splinter;
-import net.gardna.splinter.messages.block.BlockChangeMessage;
-import net.gardna.splinter.messages.block.SignChangeMessage;
+import net.gardna.splinter.messaging.ByteMessage;
+import net.gardna.splinter.messaging.SplinterHandler;
+import net.gardna.splinter.messaging.SplinterMessage;
 import net.gardna.splinter.zoner.Zoner;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
+import org.bukkit.block.data.Bisected;
 import org.bukkit.block.data.BlockData;
+import org.bukkit.block.data.type.Bed;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockBurnEvent;
 import org.bukkit.event.block.BlockEvent;
@@ -24,23 +28,125 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.BlockSpreadEvent;
 import org.bukkit.event.block.CauldronLevelChangeEvent;
 import org.bukkit.event.block.LeavesDecayEvent;
-import org.bukkit.event.block.MoistureChangeEvent;
-import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.block.SpongeAbsorbEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.world.StructureGrowEvent;
-import org.bukkit.util.Vector;
 
 import java.util.List;
 
-public class BlockEventListener implements Listener {
+public class BlockChangeHandler extends SplinterHandler {
     public static final BlockData AIR = Material.AIR.createBlockData();
     public static final BlockData FIRE = Material.FIRE.createBlockData();
     public static final BlockData WATER = Material.WATER.createBlockData();
     public static final BlockData LAVA = Material.LAVA.createBlockData();
     public static final BlockData WET_SPONGE = Material.WET_SPONGE.createBlockData();
+
+    public static final Material[] DOORS = new Material[]{
+            Material.OAK_DOOR,
+            Material.SPRUCE_DOOR,
+            Material.BIRCH_DOOR,
+            Material.JUNGLE_DOOR,
+            Material.ACACIA_DOOR,
+            Material.DARK_OAK_DOOR,
+            Material.CRIMSON_DOOR,
+            Material.WARPED_DOOR,
+            Material.IRON_DOOR
+    };
+
+    public static final Material[] BEDS = new Material[]{
+            Material.BLACK_BED,
+            Material.BLUE_BED,
+            Material.BROWN_BED,
+            Material.CYAN_BED,
+            Material.GRAY_BED,
+            Material.GREEN_BED,
+            Material.LIGHT_BLUE_BED,
+            Material.LIGHT_GRAY_BED,
+            Material.LIME_BED,
+            Material.MAGENTA_BED,
+            Material.ORANGE_BED,
+            Material.PINK_BED,
+            Material.PURPLE_BED,
+            Material.RED_BED,
+            Material.WHITE_BED,
+            Material.YELLOW_BED
+    };
+
+    public static boolean IsDoor(Material material) {
+        for (int i = 0; i < DOORS.length; i++)
+            if (DOORS[i].equals(material)) return true;
+        return false;
+    }
+
+    public static boolean IsBed(Material material) {
+        for (int i = 0; i < BEDS.length; i++)
+            if (BEDS[i].equals(material)) return true;
+        return false;
+    }
+
+    public static void PlaceDoor(Block block, BlockData blockData) {
+        Bisected belowData = (Bisected) blockData;
+        Bisected aboveData = (Bisected) belowData.clone();
+        belowData.setHalf(Bisected.Half.BOTTOM);
+        aboveData.setHalf(Bisected.Half.TOP);
+
+        block.setBlockData(belowData, false);
+        block.getRelative(BlockFace.UP).setBlockData(aboveData, false);
+    }
+
+    public static void PlaceBed(Block block, BlockData blockData) {
+        Bed footData = (Bed) blockData;
+        Bed headData = (Bed) footData.clone();
+        footData.setPart(Bed.Part.FOOT);
+        headData.setPart(Bed.Part.HEAD);
+
+        block.setBlockData(footData, false);
+        block.getRelative(footData.getFacing()).setBlockData(headData);
+    }
+
+    public BlockChangeHandler(String channel) {
+        super(channel);
+    }
+
+    public void send(Block block, BlockData blockData) {
+        String worldName = block.getWorld().getName();
+        String bdString = blockData.getAsString();
+
+        int length = ByteMessage.INT_SIZE * 3 +
+                ByteMessage.STRING_SIZE(worldName) +
+                ByteMessage.STRING_SIZE(bdString);
+
+        SplinterMessage msg = new SplinterMessage(getServerId(), length);
+
+        msg.putString(worldName);
+        msg.putInt(block.getX());
+        msg.putInt(block.getY());
+        msg.putInt(block.getZ());
+        msg.putString(bdString);
+
+        publish(msg);
+    }
+
+    @Override
+    public void recieve(SplinterMessage msg) {
+        Block block = Bukkit.getWorld(msg.getString()).getBlockAt(
+                msg.getInt(),
+                msg.getInt(),
+                msg.getInt()
+        );
+
+        BlockData blockData = Bukkit.createBlockData(msg.getString());
+
+        if (IsDoor(blockData.getMaterial())) {
+            PlaceDoor(block, blockData);
+        } else if (IsBed(blockData.getMaterial())) {
+            PlaceBed(block, blockData);
+        } else {
+            block.setBlockData(blockData, true);
+        }
+    }
 
     public static boolean ShouldDoEvent(BlockEvent event) {
         return ShouldDoEvent(event.getBlock().getLocation());
@@ -53,15 +159,7 @@ public class BlockEventListener implements Listener {
         return zoner.getSupposedRegion(location).server.equals(serverName);
     }
 
-    public void publishBlockChange(Block block, BlockData blockData) {
-        BlockChangeMessage msg = new BlockChangeMessage(
-                block.getLocation().toVector(),
-                blockData
-        );
-
-        Splinter.getInstance().netHandler.publish("block.change", msg);
-    }
-
+    // TODO: move into new class
     @EventHandler
     public void onItemSpawn(ItemSpawnEvent event) {
         if (!ShouldDoEvent(event.getLocation())) {
@@ -74,7 +172,7 @@ public class BlockEventListener implements Listener {
     public void onBucketEvent(PlayerBucketEmptyEvent event) {
         Material bucket = event.getBucket();
         BlockData bd = bucket.toString().contains("LAVA") ? LAVA : WATER;
-        publishBlockChange(event.getBlock(), bd);
+        send(event.getBlock(), bd);
     }
 
     @EventHandler
@@ -86,7 +184,7 @@ public class BlockEventListener implements Listener {
 
         List<BlockState> blockStates = event.getBlocks();
         for (BlockState bs : blockStates)
-            publishBlockChange(bs.getBlock(), bs.getBlockData());
+            send(bs.getBlock(), bs.getBlockData());
     }
 
     @EventHandler
@@ -97,7 +195,7 @@ public class BlockEventListener implements Listener {
         }
 
         Block block = event.getBlock();
-        publishBlockChange(block, AIR);
+        send(block, AIR);
     }
 
     @EventHandler
@@ -108,13 +206,13 @@ public class BlockEventListener implements Listener {
         }
 
         Block block = event.getBlock();
-        publishBlockChange(block, event.getNewState().getBlockData());
+        send(block, event.getNewState().getBlockData());
     }
 
     @EventHandler
     public void onBlockBreak(BlockBreakEvent event) {
         Block block = event.getBlock();
-        publishBlockChange(block, AIR);
+        send(block, AIR);
     }
 
     @EventHandler
@@ -125,22 +223,22 @@ public class BlockEventListener implements Listener {
         }
 
         Block block = event.getBlock();
-        publishBlockChange(block, event.getNewState().getBlockData());
+        send(block, event.getNewState().getBlockData());
     }
 
     @EventHandler
     public void onBlockExplode(BlockExplodeEvent event, List<Block> blocks, float yield) {
-        publishBlockChange(event.getBlock(), AIR);
+        send(event.getBlock(), AIR);
 
         for (int i = 0; i < blocks.size(); i++) {
-            publishBlockChange(blocks.get(i), AIR);
+            send(blocks.get(i), AIR);
         }
     }
 
     @EventHandler
     public void onEntityExplode(EntityExplodeEvent event) {
         for (int i = 0; i < event.blockList().size(); i++) {
-            publishBlockChange(event.blockList().get(i), AIR);
+            send(event.blockList().get(i), AIR);
         }
     }
 
@@ -153,7 +251,7 @@ public class BlockEventListener implements Listener {
 
         List<BlockState> blockStates = event.getBlocks();
         for (BlockState bs : blockStates)
-            publishBlockChange(bs.getBlock(), bs.getBlockData());
+            send(bs.getBlock(), bs.getBlockData());
     }
 
     @EventHandler
@@ -169,7 +267,7 @@ public class BlockEventListener implements Listener {
         }
 
         Block block = event.getBlock();
-        publishBlockChange(block, event.getNewState().getBlockData());
+        send(block, event.getNewState().getBlockData());
     }
 
     @EventHandler
@@ -180,19 +278,19 @@ public class BlockEventListener implements Listener {
         }
 
         Block block = event.getBlock();
-        publishBlockChange(block, FIRE);
+        send(block, FIRE);
     }
 
     @EventHandler
     public void onBlockPlace(BlockPlaceEvent event) {
         Block block = event.getBlock();
-        publishBlockChange(block, block.getBlockData());
+        send(block, block.getBlockData());
     }
 
     @EventHandler
     public void onCauldronChange(CauldronLevelChangeEvent event) {
         Block block = event.getBlock();
-        publishBlockChange(block, block.getBlockData());
+        send(block, block.getBlockData());
     }
 
     @EventHandler
@@ -203,19 +301,7 @@ public class BlockEventListener implements Listener {
         }
 
         Block block = event.getBlock();
-        publishBlockChange(block, AIR);
-    }
-
-    @EventHandler
-    public void onMoistureChange(MoistureChangeEvent event) {
-    }
-
-    @EventHandler
-    public void onSignChange(SignChangeEvent event) {
-        Vector loc = event.getBlock().getLocation().toVector();
-        SignChangeMessage msg = new SignChangeMessage(loc, event.getLines());
-
-        Splinter.getInstance().netHandler.publish("block.sign", msg);
+        send(block, AIR);
     }
 
     @EventHandler
@@ -225,10 +311,10 @@ public class BlockEventListener implements Listener {
             return;
         }
 
-        publishBlockChange(event.getBlock(), WET_SPONGE);
+        send(event.getBlock(), WET_SPONGE);
 
         List<BlockState> blockStates = event.getBlocks();
         for (BlockState bs : blockStates)
-            publishBlockChange(bs.getBlock(), bs.getBlockData());
+            send(bs.getBlock(), bs.getBlockData());
     }
 }
