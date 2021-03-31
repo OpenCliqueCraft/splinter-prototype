@@ -25,8 +25,6 @@ public class NetHandler extends BukkitRunnable {
 
     @Override
     public void run() {
-        Splinter.getInstance().getLogger().info("Server ID is: " + Splinter.getInstance().serverId);
-
         try {
             connection = Nats.connect(addr);
             CountDownLatch latch = new CountDownLatch(1);
