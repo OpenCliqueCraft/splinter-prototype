@@ -1,6 +1,6 @@
 {
     "name": "splinter",
-    "version": "0.0.3",
+    "version": "0.0.4",
     "description": "",
     "scripts": {
         "killjava": "tools\\killall.bat",

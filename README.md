@@ -1,4 +1,4 @@
-# Splinter 0.3
+# Splinter 0.4
 
 Built on Waterfall and Paper by [PaperMC.io](https://papermc.io/) for Minecraft 1.16.5.
 
