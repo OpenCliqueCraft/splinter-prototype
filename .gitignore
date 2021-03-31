@@ -13,6 +13,7 @@ java/*/.idea/
 
 instances/*/cache/
 instances/*/logs/
+instances/*/crash-reports/
 instances/*/plugins/bStats/
 instances/*/world*
 instances/*/Spigot.jar
