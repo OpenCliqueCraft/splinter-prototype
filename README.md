@@ -1,5 +1,7 @@
 # Splinter 0.4
 
+Now part of OpenCliqueCraft!
+
 Built on Waterfall and Paper by [PaperMC.io](https://papermc.io/) for Minecraft 1.16.5.
 
 [NATS](https://nats.io/) server required running at `nats://localhost:4222`
